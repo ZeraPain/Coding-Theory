@@ -1,15 +1,76 @@
 #include <iostream>
 #include <armadillo>
 
-using namespace std;
-using namespace arma;
-
 // Armadillo documentation is available at:
 // http://arma.sourceforge.net/docs.html
 
-int main(int argc, char** argv)
+void calc_lin_independ_vec(std::vector<arma::vec>& ret, arma::vec* init_vec, int q_index, const int q, int k_index, const int k)
 {
-	cout << "Armadillo version: " << arma_version::as_string() << endl;
+	if (k_index == (k - 1))
+	{
+		//(*init_vec).print("c:");
+		ret.push_back(*init_vec);
+		return;
+	}
+
+	k_index++;
+	auto construct_vec = *init_vec;
+	calc_lin_independ_vec(ret, &construct_vec, q_index, q, k_index, k);
+
+	while (construct_vec.at(k_index) < (q - 1))
+	{
+		construct_vec.at(k_index) += 1;
+		calc_lin_independ_vec(ret, &construct_vec, q_index + 1, q, k_index, k);
+	}
+}
+
+std::vector<arma::vec> get_lin_independ_vector(const int q, const int k)
+{
+	std::vector<arma::vec> ret;
+
+	for (auto k_index = k - 1; k_index >= 0; --k_index)
+	{
+		//std::cout << "stage " << k_index << std::endl;
+		arma::vec init_vec(k); // set size to k
+		init_vec.fill(0); // init with zero
+		init_vec.at(k_index) = 1;
+		calc_lin_independ_vec(ret, &init_vec, 1, q, k_index, k);
+	}
+
+	return ret;
+}
+
+int main()
+{
+	std::cout << "Armadillo version: " << arma::arma_version::as_string() << std::endl << std::endl;
+
+	int q, k;
+
+	std::cout << "Enter value for q: ";
+	std::cin >> q;
+
+	std::cout << "Enter value for k: ";
+	std::cin >> k;
+
+	auto lin_independ_vecs = get_lin_independ_vector(q, k);
+	const int mat_size = (pow(q, k) - 1) / (q - 1);
+
+	arma::mat A(mat_size, mat_size);
+	for (auto i = 0; i < mat_size; ++i)
+	{
+		for (auto j = 0; j < mat_size; ++j)
+		{
+			const auto res = static_cast<int>(dot(lin_independ_vecs.at(i), lin_independ_vecs.at(j))) % q;
+			A(i, j) = 0 == res ? 1 : 0;
+		}
+	}
+
+	A.print("A:");
+
+	system("PAUSE");
+	return 0;
+
+	/*cout << "Armadillo version: " << arma_version::as_string() << endl;
 
 	mat A(2, 3);  // directly specify the matrix size (elements are uninitialised)
 
@@ -144,8 +205,6 @@ int main(int argc, char** argv)
 			F(row, col) = randu<mat>(2, 3);  // each element in field<mat> is a matrix
 		}
 
-	F.print("F:");
-
-	return 0;
+	F.print("F:");*/
 }
 
