@@ -21,10 +21,13 @@
   <ItemGroup>
     <ClCompile Include="main.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\..\..\gurobi800\win64\include\gurobi_c++.h" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{BDE105B5-0B52-4D77-832F-3465D464A901}</ProjectGuid>
     <RootNamespace>example1_win64</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.15063.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -56,7 +59,14 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <IncludePath>C:\gurobi800\win64\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\gurobi800\win64\lib;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <IncludePath>C:\gurobi800\win64\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\gurobi800\win64\lib;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -69,12 +79,6 @@
       <AdditionalDependencies>lapack_win32_MT.lib;blas_win32_MT.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>lapack\x86;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
-	<PostBuildEvent>
-      <Command>copy lapack\x86\*.dll $(OutDir)</Command>
-    </PostBuildEvent>
-    <PostBuildEvent>
-      <Message>Copy .DLL to output directory</Message>
-    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -92,46 +96,28 @@
       <AdditionalDependencies>lapack_win32_MT.lib;blas_win32_MT.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>lapack\x86;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
-	<PostBuildEvent>
-      <Command>copy lapack\x86\*.dll $(OutDir)</Command>
-    </PostBuildEvent>
-    <PostBuildEvent>
-      <Message>Copy .DLL to output directory</Message>
-    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>armadillo-8.500-RC2\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>ARMA_USE_LAPACK;ARMA_USE_BLAS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>lapack_win64_MT.lib;blas_win64_MT.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>lapack\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>gurobi80.lib;gurobi_c++md2017.lib;gurobi_c++mdd2017.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\gurobi800\win64\lib;lapack\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
-    <PostBuildEvent>
-      <Command>copy lapack\x64\*.dll $(OutDir)</Command>
-    </PostBuildEvent>
-    <PostBuildEvent>
-      <Message>Copy .DLL to output directory</Message>
-    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>armadillo-8.500-RC2\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>ARMA_USE_LAPACK;ARMA_USE_BLAS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>lapack_win64_MT.lib;blas_win64_MT.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>lapack\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>gurobi80.lib;gurobi_c++md2017.lib;gurobi_c++mdd2017.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\gurobi800\win64\lib;lapack\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>false</GenerateDebugInformation>
     </Link>
-    <PostBuildEvent>
-      <Command>copy lapack\x64\*.dll $(OutDir)</Command>
-    </PostBuildEvent>
-    <PostBuildEvent>
-      <Message>Copy .DLL to output directory</Message>
-    </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
