@@ -78,10 +78,10 @@ int main()
 	auto lin_independ_vecs = get_lin_independ_vector(q, k);
 	const int mat_size = (pow(q, k) - 1) / (q - 1);
 
-	const auto A = new int*[mat_size];
+	const auto A = new double*[mat_size];
 	for (auto i = 0; i < mat_size; ++i)
 	{
-		A[i] = new int[mat_size];
+		A[i] = new double [mat_size];
 	}
 
 	for (auto i = 0; i < mat_size; ++i)
@@ -117,29 +117,63 @@ int main()
 
 		model.set(GRB_StringAttr_ModelName, "Optimierungsproblem");
 
-		const auto valueNames = new std::string[mat_size];
-		const auto oneVector = new double[mat_size];
-		const auto minVector = new double[mat_size];
-		const auto maxVector = new double[mat_size];
+		//const auto valueNames = new std::string[mat_size];
+		//const auto oneVector = new double[mat_size];
+		//const auto minVector = new double[mat_size];
+		//const auto maxVector = new double[mat_size];
+
+		//for (auto i = 0; i < mat_size; i++)
+		//{
+		//	valueNames[i] = std::string("x").append(std::to_string(i));
+		//	oneVector[i] = 1;
+		//	minVector[i] = 0;
+		//	maxVector[i] = GRB_INFINITY;
+		//}
+
+		//// Value setzen
+		//GRBVar* x = model.addVars(minVector, maxVector, nullptr, nullptr, valueNames, mat_size);
+
+		//GRBLinExpr obj = 0.0;
+		//for (auto i = 0; i < mat_size; i++)
+		//{
+		//	obj += x[i];
+		//}
+
+		//model.setObjective(obj, GRB_MAXIMIZE);
+
+		// ******* von mir ******** //
+
+		std::vector<GRBVar> vars;
 
 		for (auto i = 0; i < mat_size; i++)
 		{
-			valueNames[i] = std::string("x").append(std::to_string(i));
-			oneVector[i] = 1;
-			minVector[i] = 0;
-			maxVector[i] = GRB_INFINITY;
+			std::string name = std::string("x").append(std::to_string(i));
+			vars.push_back(model.addVar(0.0, GRB_INFINITY, 0.0, GRB_INTEGER, name));
 		}
 
-		// Value setzen
-		GRBVar* x = model.addVars(minVector, maxVector, nullptr, nullptr, valueNames, mat_size);
-
+		// set objective
 		GRBLinExpr obj = 0.0;
 		for (auto i = 0; i < mat_size; i++)
 		{
-			obj += x[i];
+			obj += vars[i];
 		}
 
 		model.setObjective(obj, GRB_MAXIMIZE);
+		
+		GRBLinExpr constraints[4] = {GRBLinExpr()};
+
+		for (auto i = 0; i < mat_size; ++i)
+		{
+			for (auto j = 0; j < mat_size; ++j)
+			{
+				double coeffs[1] = {A[i][j]};
+				double *p_coeffs = coeffs;
+				GRBVar variables[1] = {vars[i]};
+				GRBVar *p_vars = variables;
+				constraints[j].addTerms(p_coeffs, p_vars, 1);
+			}
+			std::cout << std::endl;
+		}
 
 		/*for (auto i = 0; i < mat_size; ++i)
 		{
@@ -151,13 +185,13 @@ int main()
 
 		for (auto i = 0; i < mat_size; i++)
 		{
-			std::cout << x[i].get(GRB_StringAttr_VarName) << " "
-				<< x[i].get(GRB_DoubleAttr_X) << std::endl;
+			std::cout << vars[i].get(GRB_StringAttr_VarName) << " "
+				<< vars[i].get(GRB_DoubleAttr_X) << std::endl;
 		}
 
-		delete[] valueNames;
+		/*delete[] valueNames;
 		delete[] minVector;
-		delete[] maxVector;
+		delete[] maxVector;*/
 	}
 	catch (const GRBException& e)
 	{
@@ -180,4 +214,5 @@ int main()
 
 	return 0;
 }
+
 
