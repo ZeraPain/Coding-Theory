@@ -63,16 +63,20 @@ int main()
 	*/
 
 #ifdef MANUAL_INPUT
-	int q, k;
+	int q, k, b;
 
 	std::cout << "Enter value for q: ";
 	std::cin >> q;
 
 	std::cout << "Enter value for k: ";
 	std::cin >> k;
+
+	std::cout << "Enter value for b: ";
+	std::cin >> b;
 #else
 	const auto q = 3;
 	const auto k = 2;
+	const auto b = 2;
 #endif
 
 	auto lin_independ_vecs = get_lin_independ_vector(q, k);
@@ -117,32 +121,6 @@ int main()
 
 		model.set(GRB_StringAttr_ModelName, "Optimierungsproblem");
 
-		//const auto valueNames = new std::string[mat_size];
-		//const auto oneVector = new double[mat_size];
-		//const auto minVector = new double[mat_size];
-		//const auto maxVector = new double[mat_size];
-
-		//for (auto i = 0; i < mat_size; i++)
-		//{
-		//	valueNames[i] = std::string("x").append(std::to_string(i));
-		//	oneVector[i] = 1;
-		//	minVector[i] = 0;
-		//	maxVector[i] = GRB_INFINITY;
-		//}
-
-		//// Value setzen
-		//GRBVar* x = model.addVars(minVector, maxVector, nullptr, nullptr, valueNames, mat_size);
-
-		//GRBLinExpr obj = 0.0;
-		//for (auto i = 0; i < mat_size; i++)
-		//{
-		//	obj += x[i];
-		//}
-
-		//model.setObjective(obj, GRB_MAXIMIZE);
-
-		// ******* von mir ******** //
-
 		std::vector<GRBVar> vars;
 
 		for (auto i = 0; i < mat_size; i++)
@@ -175,10 +153,11 @@ int main()
 			std::cout << std::endl;
 		}
 
-		/*for (auto i = 0; i < mat_size; ++i)
+		for (auto i = 0; i < vars.size(); ++i)
 		{
-			model.addConstr(x[i] <= 3); // TODO add contraint Ax <= b
-		}*/
+			model.addConstr(vars[i], GRB_LESS_EQUAL, b);
+		
+		}
 
 		// Solve
 		model.optimize();
@@ -189,9 +168,6 @@ int main()
 				<< vars[i].get(GRB_DoubleAttr_X) << std::endl;
 		}
 
-		/*delete[] valueNames;
-		delete[] minVector;
-		delete[] maxVector;*/
 	}
 	catch (const GRBException& e)
 	{
