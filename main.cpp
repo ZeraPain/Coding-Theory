@@ -138,7 +138,8 @@ int main()
 
 		model.setObjective(obj, GRB_MAXIMIZE);
 		
-		GRBLinExpr constraints[4] = {GRBLinExpr()};
+		// TODO: replace 4 with mat_size
+		GRBLinExpr constraints[4] =  {GRBLinExpr()};
 
 		for (auto i = 0; i < mat_size; ++i)
 		{
