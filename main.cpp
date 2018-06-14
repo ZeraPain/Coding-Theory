@@ -74,9 +74,9 @@ int main()
 	std::cout << "Enter value for b: ";
 	std::cin >> b;
 #else
-	const auto q = 3;
-	const auto k = 2;
-	const auto b = 2;
+	const auto q = 11;
+	const auto k = 3;
+	const auto b = 10;
 #endif
 
 	auto lin_independ_vecs = get_lin_independ_vector(q, k);
@@ -98,7 +98,7 @@ int main()
 	}
 
 	// print
-	std::cout << "A:" << std::endl;
+	/*std::cout << "A:" << std::endl;
 	for (auto i = 0; i < mat_size; ++i)
 	{
 		for (auto j = 0; j < mat_size; ++j)
@@ -107,7 +107,7 @@ int main()
 		}
 		std::cout << std::endl;
 	}
-
+	*/
 
 	/*
 	 * Schritt 2. Nutzen Sie GUROBI (http://www.gurobi.com), um ein
@@ -138,36 +138,36 @@ int main()
 
 		model.setObjective(obj, GRB_MAXIMIZE);
 		
-		// TODO: replace 4 with mat_size
-		GRBLinExpr constraints[4] =  {GRBLinExpr()};
-
+		GRBLinExpr* constraints = new GRBLinExpr[mat_size];
 		for (auto i = 0; i < mat_size; ++i)
 		{
 			for (auto j = 0; j < mat_size; ++j)
 			{
-				double coeffs[1] = {A[i][j]};
-				double *p_coeffs = coeffs;
-				GRBVar variables[1] = {vars[i]};
-				GRBVar *p_vars = variables;
-				constraints[j].addTerms(p_coeffs, p_vars, 1);
+				constraints[j].addTerms(&A[i][j], &vars[i], 1);
 			}
-			std::cout << std::endl;
 		}
 
-		for (auto i = 0; i < vars.size(); ++i)
+		for (auto i = 0; i < mat_size; ++i)
 		{
-			model.addConstr(vars[i], GRB_LESS_EQUAL, b);
-		
+			model.addConstr(constraints[i], GRB_LESS_EQUAL, b);
 		}
 
 		// Solve
+		//model.update();
+		//model.write("debug.lp");
 		model.optimize();
 
+		double n = 0;
 		for (auto i = 0; i < mat_size; i++)
 		{
+			n += vars[i].get(GRB_DoubleAttr_X);
 			std::cout << vars[i].get(GRB_StringAttr_VarName) << " "
 				<< vars[i].get(GRB_DoubleAttr_X) << std::endl;
 		}
+
+		std::cout << "n=" << n << std::endl;
+
+		delete[] constraints;
 
 	}
 	catch (const GRBException& e)
