@@ -42,9 +42,37 @@ for (auto i = 0; i < mat_size; ++i)
 \subsection{Tests}
 Getestet wurde dieser Teil der Anwendung u.a. für die folgenden Wertepaare:
 
-\begin{itemize}
-	\item bli
-	\item bla
-	\item blubb
-	
-\end{itemize}
+\begin{description}
+	\item
+	Ergebnis für q=2 und k =2:
+	$
+		\begin{pmatrix}
+			1 & 0 & 0 \\
+			0 & 1 & 0 \\
+			0 & 0 & 1 \\
+		\end{pmatrix}
+	$
+	\item
+	q=2 und k=3:			
+	$
+	\begin{pmatrix}
+		0 & 1 & 0 & 1 & 0 & 1 & 0 \\
+		1 & 0 & 0 & 1 & 1 & 0 & 0 \\
+		0 & 0 & 1 & 1 & 0 & 0 & 1 \\
+		1 & 1 & 1 & 0 & 0 & 0 & 0 \\
+		0 & 1 & 0 & 0 & 1 & 0 & 0 \\
+		0 & 0 & 1 & 0 & 1 & 1 & 0 \\
+	\end{pmatrix}
+	$ 
+	\item 
+	q=3 und k=2: 
+	$
+	\begin{pmatrix}
+		0 & 1 & 0 & 0 \\
+		1 & 0 & 0 & 0 \\
+		0 & 0 & 0 & 1 \\
+		0 & 0 & 1 & 0 \\		
+	\end{pmatrix}
+	$
+\end{description}
+Neben den oben aufgeführten Werten wurden noch deutlich größere Eingaben, z.B. .. getestet. Die Matritzen werden hierzu korrekt berechnen, lassen sich allerdings nicht mehr korrekt innerhalb eines PDF's darstellen.
