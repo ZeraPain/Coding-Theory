@@ -8,3 +8,8 @@
 /Debug
 /x64/Debug
 /.vs
+*.aux
+*.toc
+*.gz
+*.log
+*.lol
