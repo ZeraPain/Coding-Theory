@@ -101,6 +101,7 @@
     <ClCompile>
       <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <Optimization>Disabled</Optimization>
     </ClCompile>
     <Link>
       <AdditionalDependencies>gurobi80.lib;gurobi_c++md2017.lib;blas_win64_MT.lib;lapack_win64_MT.lib;gurobi_c++mdd2017.lib;%(AdditionalDependencies)</AdditionalDependencies>
