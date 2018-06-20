@@ -334,6 +334,8 @@ vector<double> gurobiPart(const s32_mat &A, const s32_rowvec& c, int b)
     try {
 	    const auto env = GRBEnv();
 	    auto model = GRBModel(env);
+		model.getEnv().set(GRB_IntParam_OutputFlag, 0);
+
         vector<GRBVar> modelVars;
 
 	    modelVars.reserve(A.n_cols);
@@ -356,8 +358,8 @@ vector<double> gurobiPart(const s32_mat &A, const s32_rowvec& c, int b)
             model.addConstr(expr, GRB_LESS_EQUAL, b, string("constr").append(to_string(x)));
         }
 
-		model.update();
-		model.write("debug.lp");
+		//model.update();
+		//model.write("debug.lp");
         model.optimize();
 
         vector<double> results;
