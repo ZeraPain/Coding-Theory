@@ -11,11 +11,13 @@ using std::string;
 using std::to_string;
 using std::numeric_limits;
 
-const int q = 3;
-const int k = 3;
-const int b = 3;
+#define SHOW_GUROBI_OUTPUT 1
+#define OPTIMIZE_GROUPS 1
+#define GROUP_REDUCE_FACTOR 0.4
 
-const int groupLimit = 5;
+const int q = 3;
+const int k = 5;
+const int b = 6;
 
 vector<s32_vec> canonicalRepresent(int q, int k);
 
@@ -35,9 +37,11 @@ s32_mat generateG(vector<double> xVec, vector<vector<arma::uword>> colGroups, co
 
 s32_mat generateE0(int k);
 
-void normalizeVector(s32_vec& rVector, int q);
+void normalizeVector(s32_vec& v, int q);
 
-bool isLinDependent(s32_vec& rVector1, s32_vec& rVector2, int q);
+bool isEqualVector(s32_vec& v1, s32_vec& v2);
+
+bool isLinDependent(s32_vec& v1, s32_vec v2, int q);
 
 bool isNullVector(s32_vec& rVector);
 
@@ -71,9 +75,12 @@ int main() {
 	cout << "----------------------------------------------------" << endl;
 	auto A = generateMatrixA(rVector, q);
 	A.raw_print();
+	s32_vec c(A.n_cols);
+	c.fill(1);
 	cout << "----------------------------------------------------" << endl << endl;
 
-	cout << "Testing for e0 which creates less or equal than [" << groupLimit << "] groups" << endl;
+	cout << "Testing for e0 which creates less or equal than [" << static_cast<int>(A.n_cols * GROUP_REDUCE_FACTOR) << "] groups" << endl;
+	cout << "----------------------------------------------------" << endl;
 	s32_mat e0;
 	vector<vector<arma::uword>> colCycles;
 	vector<vector<arma::uword>> colGroups;
@@ -82,9 +89,9 @@ int main() {
 		e0 = generateE0(k);
 		colCycles = cycleCheck(rVector, e0, q);
 		colGroups = generateRepresentGroups(colCycles, rVector.size());
-	} while (colGroups.size() > groupLimit);
+	} while (OPTIMIZE_GROUPS && colGroups.size() > A.n_cols * GROUP_REDUCE_FACTOR);
 
-	cout << "Found Producer e0:" << endl;
+	cout << "Found Producer e0 - reducing to [" << colGroups.size() << "] groups" << endl;
 	e0.raw_print();
 	cout << "----------------------------------------------------" << endl << endl;
 
@@ -116,9 +123,6 @@ int main() {
 		cout << "}" << endl;
 	}
 	cout << "----------------------------------------------------" << endl << endl;
-
-	s32_vec c(A.n_cols);
-	c.fill(1);
 
 	cout << "Re-calculate matrix A with cylces" << endl;
 	cout << "----------------------------------------------------" << endl;
@@ -171,9 +175,7 @@ int main() {
 
 int getMinHammingDistance(int q, int k, const s32_mat &G) {
     vector<s32_vec> language = generateLanguage(q, k);
-
     language.erase(language.begin());
-
 
     vector<s32_vec> codes;
     for (uint32_t i = 0; i < language.size() - 1; i++) {
@@ -188,7 +190,7 @@ int getMinHammingDistance(int q, int k, const s32_mat &G) {
 	        const auto left = codes.at(i);
 	        const auto right = codes.at(j);
 	        const auto distance = getHammingDistance(left, right);
-            if (distance < minDistance) {
+            if (distance > 0 && distance < minDistance) {
                 minDistance = distance;
             }
         }
@@ -273,8 +275,37 @@ s32_mat generateG(vector<double> xVec, vector<vector<arma::uword>> colGroups, co
 
 s32_mat generateE0(int k)
 {
-	arma::arma_rng::set_seed_random();
-	return arma::randn<s32_mat>(k, k);
+	/*
+	 Found Producer e0:
+	1 0 0 0 0
+	1 1 1 1 0
+	1 0 1 0 0
+	1 0 0 1 0
+	0 0 1 0 1
+	 */
+	if (OPTIMIZE_GROUPS)
+	{
+		arma::arma_rng::set_seed_random();
+		s32_mat e = arma::randn<s32_mat>(k, k);
+		for (auto i = 0; i < k; ++i)
+		{
+			for (auto j = 0; j < k; ++j)
+			{
+				e(i, j) = e(i, j) != 0 ? 1 : 0;
+			}
+		}
+		return e;
+	}
+	else
+	{
+		return s32_mat(k, k);
+	}
+	/*s32_mat e0;
+	e0 << 1 << 0 << 1 << arma::endr
+	<< 0 << 1 << 0 << arma::endr
+	<< 0 << 0 << 1 << arma::endr;
+
+	return e0;*/
 
 	/*s32_mat e0;
 	e0 << 1 << 0 << 0 << arma::endr
@@ -284,19 +315,52 @@ s32_mat generateE0(int k)
 	return e0;*/
 }
 
-void normalizeVector(s32_vec& rVector, int q)
+void normalizeVector(s32_vec& v, int q)
 {
-	for (auto& value : rVector)
+	for (auto& value : v)
 	{
 		value %= q;
 	}
 }
 
-bool isLinDependent(s32_vec& rVector1, s32_vec& rVector2, int q)
+bool isEqualVector(s32_vec& v1, s32_vec& v2)
 {
-	s32_vec crossProd = arma::cross(rVector1, rVector2);
-	normalizeVector(crossProd, q);
-	return isNullVector(crossProd);
+	bool ret = false;
+
+	if (v1.n_rows == v2.n_rows)
+	{
+		ret = true;
+		for (arma::uword i = 0; i < v1.n_rows; ++i)
+		{
+			if (v1.at(i) != v2.at(i))
+			{
+				ret = false;
+			}
+		}
+	}
+
+	return ret;
+}
+
+bool isLinDependent(s32_vec& v1, s32_vec v2, int q)
+{
+	bool ret = false;
+
+	if (v1.n_cols == v2.n_cols)
+	{
+		for (auto i = 1; i < q; ++i)
+		{
+			v2 *= i;
+			normalizeVector(v2, q);
+			if (isEqualVector(v1, v2))
+			{
+				ret = true;
+				break;
+			}
+		}
+	}
+
+	return ret;
 }
 
 bool isNullVector(s32_vec& rVector)
@@ -392,7 +456,7 @@ vector<double> gurobiPart(const s32_mat &A, const s32_vec& c, int b)
     try {
 	    const auto env = GRBEnv();
 	    auto model = GRBModel(env);
-		model.getEnv().set(GRB_IntParam_OutputFlag, 0);
+		model.getEnv().set(GRB_IntParam_OutputFlag, SHOW_GUROBI_OUTPUT);
 
         vector<GRBVar> modelVars;
 
