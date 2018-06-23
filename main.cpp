@@ -4,18 +4,21 @@
 #include <gurobi_c++.h>
 
 using std::vector;
-using arma::s32_vec;
+using std::string;
 using std::cout;
 using std::endl;
-using arma::s32_mat;
-using std::string;
-using std::to_string;
-using std::numeric_limits;
 
+using arma::s32_vec;
+using arma::s32_mat;
+using arma::uword;
+
+
+/* Configuration */
 constexpr bool SHOW_GUROBI_OUTPUT = true;
 constexpr bool SHOW_MATRIX_OUTPUT = true;
 constexpr uint32_t TIMEOUT_MATRIX_REDUCE = 10;
 
+/* Parameters */
 constexpr int q = 3;
 constexpr int k = 5;
 constexpr int b = 6;
@@ -28,15 +31,15 @@ int getHammingDistance(const s32_vec& c1, const s32_vec& c2);
 
 s32_mat generateMatrixA(const vector<s32_vec>& canonicalRepresents, int q);
 s32_vec generateX(const s32_mat &A, const s32_vec& c, int b);
-s32_vec generateC(const vector<vector<arma::uword>>& colGroups);
-s32_mat generateG(const s32_vec& xVec, const vector<vector<arma::uword>>& colGroups, const vector<s32_vec> &rVector);
+s32_vec generateC(const vector<vector<uword>>& colGroups);
+s32_mat generateG(const s32_vec& xVec, const vector<vector<uword>>& colGroups, const vector<s32_vec> &rVector);
 s32_mat generateE0(int k);
 
 vector<s32_vec> generateCanonicalRepresent(int q, int k);
 vector<s32_vec> generateLanguage(int q, int k);
 
-void regenerateMatrixA(s32_mat& A, const vector<vector<arma::uword>>& colCycles, const vector<vector<arma::uword>>& rowCycles);
-vector<vector<arma::uword>> generateRepresentGroups(const vector<vector<arma::uword>>& colCycles, int vecCount);
+void regenerateMatrixA(s32_mat& A, const vector<vector<uword>>& colCycles, const vector<vector<uword>>& rowCycles);
+vector<vector<uword>> generateRepresentGroups(const vector<vector<uword>>& colCycles, int vecCount);
 
 void normalizeVector(s32_vec& v, int q);
 bool isEqualVector(const s32_vec& v1, const s32_vec& v2);
@@ -44,7 +47,7 @@ bool isLinDependent(const s32_vec& v1, const s32_vec& v2, int q);
 bool isNullVector(const s32_vec& rVector);
 
 int getVectorIndex(const vector<s32_vec>& rVector, const s32_vec& rVec, int q);
-vector<vector<arma::uword>> cycleCheck(const vector<s32_vec>& rVector, const s32_mat& E, int q);
+vector<vector<uword>> cycleCheck(const vector<s32_vec>& rVector, const s32_mat& E, int q);
 
 
 
@@ -58,7 +61,7 @@ int main()
 	auto rVector = generateCanonicalRepresent(q, k);
 	if (SHOW_MATRIX_OUTPUT)
 	{
-		for (arma::uword i = 0; i < rVector.size(); ++i)
+		for (uword i = 0; i < rVector.size(); ++i)
 		{
 			cout << "r" << i << "\t";
 			rVector.at(i).t().raw_print();
@@ -80,15 +83,15 @@ int main()
 	cout << "Testing for e0..." << endl;
 	cout << "----------------------------------------------------" << endl;
 
-	vector<vector<arma::uword>> colCycles;
-	vector<vector<arma::uword>> colGroups;
-	vector<vector<arma::uword>> rowCycles;
-	vector<vector<arma::uword>> rowGroups;
+	vector<vector<uword>> colCycles;
+	vector<vector<uword>> colGroups;
+	vector<vector<uword>> rowCycles;
+	vector<vector<uword>> rowGroups;
 
 	s32_mat e0;
-	auto totalGroupCount = numeric_limits<uint32_t>::max();
-	auto colGroupsCount = numeric_limits<uint32_t>::max();
-	auto rowGroupsCount = numeric_limits<uint32_t>::max();
+	auto totalGroupCount = std::numeric_limits<uint32_t>::max();
+	auto colGroupsCount = std::numeric_limits<uint32_t>::max();
+	auto rowGroupsCount = std::numeric_limits<uint32_t>::max();
 	uint32_t timeout = 0;
 
 	auto start = std::chrono::high_resolution_clock::now();
@@ -136,7 +139,7 @@ int main()
 	for (auto& group : colGroups)
 	{
 		cout << "S([r" << group.at(0) << "]) = {";
-		for (arma::uword i = 0; i < group.size(); i++)
+		for (uword i = 0; i < group.size(); i++)
 		{
 			cout << "[r" << group.at(i) << "]";
 			if (i != group.size() - 1) cout << ", ";
@@ -150,7 +153,7 @@ int main()
 	for (auto& group : rowGroups)
 	{
 		cout << "ST([r" << group.at(0) << "]) = {";
-		for (arma::uword i = 0; i < group.size(); i++)
+		for (uword i = 0; i < group.size(); i++)
 		{
 			cout << "[r" << group.at(i) << "]";
 			if (i != group.size() - 1) cout << ", ";
@@ -223,7 +226,7 @@ int getMinHammingDistance(const int q, const int k, const s32_mat &G)
         codes.push_back(encode(word, G, q));
     }
 
-	auto minDistance = numeric_limits<int>::max();
+	auto minDistance = std::numeric_limits<int>::max();
 	for (auto& codeword : codes)
 	{
 		for (auto& codeword2 : codes)
@@ -254,7 +257,7 @@ int getHammingDistance(const s32_vec& c1, const s32_vec& c2)
 
     int ret = 0;
 
-    for (arma::uword i = 0; i < c1.size(); i++) 
+    for (uword i = 0; i < c1.size(); i++) 
 	{
 		ret += abs(c1.at(i) - c2.at(i));
     }
@@ -281,7 +284,7 @@ vector<s32_vec> generateLanguage(const int q, const int k)
     return language;
 }
 
-s32_mat generateG(const s32_vec& xVec, const vector<vector<arma::uword>>& colGroups, const vector<s32_vec> &rVector)
+s32_mat generateG(const s32_vec& xVec, const vector<vector<uword>>& colGroups, const vector<s32_vec> &rVector)
 {
 	uint32_t colSize = 0;
 	for (uint32_t i = 0; i < xVec.size(); ++i)
@@ -342,7 +345,7 @@ bool isEqualVector(const s32_vec& v1, const s32_vec& v2)
 	if (v1.size() == v2.size())
 	{
 		ret = true;
-		for (arma::uword i = 0; i < v1.size(); ++i)
+		for (uword i = 0; i < v1.size(); ++i)
 		{
 			if (v1.at(i) != v2.at(i))
 			{
@@ -394,7 +397,7 @@ int getVectorIndex(const vector<s32_vec>& rVector, const s32_vec& rVec, const in
 {
 	auto ret = -1;
 
-	for (arma::uword i = 0; i < rVector.size(); i++)
+	for (uword i = 0; i < rVector.size(); i++)
 	{
 		if (isLinDependent(rVector.at(i), rVec, q))
 		{
@@ -406,11 +409,11 @@ int getVectorIndex(const vector<s32_vec>& rVector, const s32_vec& rVec, const in
 	return ret;
 }
 
-vector<vector<arma::uword>> cycleCheck(const vector<s32_vec>& rVector, const s32_mat& E, const int q)
+vector<vector<uword>> cycleCheck(const vector<s32_vec>& rVector, const s32_mat& E, const int q)
 {
-	vector<vector<arma::uword>> cycles;
+	vector<vector<uword>> cycles;
 
-	for (arma::uword i = 0; i < rVector.size(); i++)
+	for (uword i = 0; i < rVector.size(); i++)
 	{
 		s32_vec tmpVec = E * rVector.at(i);
 		normalizeVector(tmpVec, q);
@@ -428,9 +431,9 @@ vector<vector<arma::uword>> cycleCheck(const vector<s32_vec>& rVector, const s32
 						c.push_back(vectorIndex);
 						isInQueue = true;
 					}
-					else if (c.front() == static_cast<arma::uword>(vectorIndex))
+					else if (c.front() == static_cast<uword>(vectorIndex))
 					{
-						vector<arma::uword> r;
+						vector<uword> r;
 						r.push_back(i);
 						r.insert(r.end(), c.begin(), c.end());
 						c = r;
@@ -440,7 +443,7 @@ vector<vector<arma::uword>> cycleCheck(const vector<s32_vec>& rVector, const s32
 
 				if (!isInQueue)
 				{
-					vector<arma::uword> tmpQueue;
+					vector<uword> tmpQueue;
 					tmpQueue.push_back(i);
 					tmpQueue.push_back(vectorIndex);
 					cycles.push_back(tmpQueue);
@@ -455,7 +458,7 @@ vector<vector<arma::uword>> cycleCheck(const vector<s32_vec>& rVector, const s32
 		{
 			s32_vec tmpVec = E * rVector.at(c.back());
 			normalizeVector(tmpVec, q);
-			const arma::uword vectorIndex = getVectorIndex(rVector, tmpVec, q);
+			const uword vectorIndex = getVectorIndex(rVector, tmpVec, q);
 			if (c.front() == vectorIndex)
 			{
 				c.push_back(vectorIndex);
@@ -488,25 +491,28 @@ s32_vec generateX(const s32_mat &A, const s32_vec& c, const int b)
 		model.getEnv().set(GRB_IntParam_OutputFlag, SHOW_GUROBI_OUTPUT);
 
         vector<GRBVar> modelVars;
-
-	    modelVars.reserve(A.n_cols);
-	    for (arma::uword i = 0; i < A.n_cols; i++) {
-            modelVars.push_back(model.addVar(0.0, GRB_INFINITY, 0.0, GRB_INTEGER, string("var").append(to_string(i))));
+	    modelVars.reserve(c.size());
+	    for (uint32_t i = 0; i < c.size(); i++)
+		{
+            modelVars.push_back(model.addVar(0.0, GRB_INFINITY, 0.0, GRB_INTEGER));
         }
 
         GRBLinExpr expr = 0.0;
-        for (arma::uword i = 0; i < A.n_cols; i++) {
+        for (uint32_t i = 0; i < c.size(); i++)
+		{
             expr += modelVars.at(i) * c.at(i);
         }
 
         model.setObjective(expr, GRB_MAXIMIZE);
 
-        for (arma::uword x = 0; x < A.n_rows; x++) {
+        for (uword x = 0; x < A.n_rows; x++) 
+		{
             expr = 0.0;
-            for (arma::uword y = 0; y < A.n_cols; y++) {
+            for (uword y = 0; y < A.n_cols; y++) 
+			{
                 expr += modelVars.at(y) * A(x, y);
             }
-            model.addConstr(expr, GRB_LESS_EQUAL, b, string("constr").append(to_string(x)));
+            model.addConstr(expr, GRB_LESS_EQUAL, b);
         }
 
 		//model.update();
@@ -530,11 +536,11 @@ s32_vec generateX(const s32_mat &A, const s32_vec& c, const int b)
     return s32_vec(A.n_cols);
 }
 
-s32_vec generateC(const vector<vector<arma::uword>>& colGroups)
+s32_vec generateC(const vector<vector<uword>>& colGroups)
 {
 	s32_vec c(colGroups.size());
 
-	for (arma::uword i = 0; i < colGroups.size(); ++i)
+	for (uword i = 0; i < colGroups.size(); ++i)
 	{
 		c.at(i) = colGroups.at(i).size();
 	}
@@ -546,9 +552,9 @@ s32_mat generateMatrixA(const vector<s32_vec> &canonicalRepresents, const int q)
 {
 	s32_mat A(canonicalRepresents.size(), canonicalRepresents.size(), arma::fill::zeros);
 
-    for (arma::uword row = 0; row < canonicalRepresents.size(); ++row) 
+    for (uword row = 0; row < canonicalRepresents.size(); ++row) 
 	{
-        for (arma::uword col = 0; col < canonicalRepresents.size(); ++col)
+        for (uword col = 0; col < canonicalRepresents.size(); ++col)
 		{
             if (static_cast<int>(dot(canonicalRepresents.at(row), canonicalRepresents.at(col))) % q == 0) 
 			{
@@ -559,16 +565,16 @@ s32_mat generateMatrixA(const vector<s32_vec> &canonicalRepresents, const int q)
     return A;
 }
 
-void regenerateMatrixA(s32_mat& A, const vector<vector<arma::uword>>& colCycles, const vector<vector<arma::uword>>& rowCycles)
+void regenerateMatrixA(s32_mat& A, const vector<vector<uword>>& colCycles, const vector<vector<uword>>& rowCycles)
 {
-	vector<arma::uword> colsDelete;
-	vector<arma::uword> rowsDelete;
+	vector<uword> colsDelete;
+	vector<uword> rowsDelete;
 
 	for (auto& c : colCycles)
 	{
-		for (arma::uword i = 1; i < c.size(); ++i)
+		for (uword i = 1; i < c.size(); ++i)
 		{
-			for (arma::uword j = 0; j < A.n_rows; j++)
+			for (uword j = 0; j < A.n_rows; j++)
 			{
 				A(j, c.at(0)) += A(j, c.at(i));
 			}
@@ -579,7 +585,7 @@ void regenerateMatrixA(s32_mat& A, const vector<vector<arma::uword>>& colCycles,
 
 	for (auto& r : rowCycles)
 	{
-		for (arma::uword i = 1; i < r.size(); ++i)
+		for (uword i = 1; i < r.size(); ++i)
 		{
 			rowsDelete.push_back(r.at(i));
 		}
@@ -623,14 +629,14 @@ vector<s32_vec> generateCanonicalRepresent(const int q, const int k)
     return rVector;
 }
 
-bool sortHelper(const vector<arma::uword>& i, const vector<arma::uword>& j)
+bool sortHelper(const vector<uword>& i, const vector<uword>& j)
 {
 	return i.at(0) < j.at(0);
 }
 
-vector<vector<arma::uword>> generateRepresentGroups(const vector<vector<arma::uword>>& colCycles, const int vecCount)
+vector<vector<uword>> generateRepresentGroups(const vector<vector<uword>>& colCycles, const int vecCount)
 {
-	vector<vector<arma::uword>> repGroups;
+	vector<vector<uword>> repGroups;
 	repGroups.reserve(colCycles.size());
 	for (auto& colCycle : colCycles)
 	{
@@ -653,7 +659,7 @@ vector<vector<arma::uword>> generateRepresentGroups(const vector<vector<arma::uw
 
 		if (!found)
 		{
-			repGroups.push_back(std::vector<arma::uword>{static_cast<arma::uword>(i)});
+			repGroups.push_back(std::vector<uword>{static_cast<uword>(i)});
 		}
 	}
 
