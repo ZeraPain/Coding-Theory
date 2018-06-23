@@ -12,10 +12,10 @@ using std::to_string;
 using std::numeric_limits;
 
 const int q = 3;
-
 const int k = 3;
-
 const int b = 3;
+
+const int groupLimit = 5;
 
 vector<s32_vec> canonicalRepresent(int q, int k);
 
@@ -29,11 +29,11 @@ void regenerateMatrixA(s32_mat& A, vector<vector<arma::uword>>& colCycles, vecto
 
 vector<double> gurobiPart(const s32_mat &A, const s32_vec& c, int b);
 
-s32_vec generateC(s32_mat& A);
+s32_vec generateC(vector<vector<arma::uword>>& colGroups);
 
 s32_mat generateG(vector<double> xVec, vector<vector<arma::uword>> colGroups, const vector<s32_vec> &rVector);
 
-s32_mat generateE0();
+s32_mat generateE0(int k);
 
 void normalizeVector(s32_vec& rVector, int q);
 
@@ -73,16 +73,23 @@ int main() {
 	A.raw_print();
 	cout << "----------------------------------------------------" << endl << endl;
 
-	cout << "Generate Producer e0" << endl;
-	cout << "----------------------------------------------------" << endl;
-	auto e0 = generateE0();
+	cout << "Testing for e0 which creates less or equal than [" << groupLimit << "] groups" << endl;
+	s32_mat e0;
+	vector<vector<arma::uword>> colCycles;
+	vector<vector<arma::uword>> colGroups;
+	do
+	{
+		e0 = generateE0(k);
+		colCycles = cycleCheck(rVector, e0, q);
+		colGroups = generateRepresentGroups(colCycles, rVector.size());
+	} while (colGroups.size() > groupLimit);
+
+	cout << "Found Producer e0:" << endl;
 	e0.raw_print();
 	cout << "----------------------------------------------------" << endl << endl;
 
-	cout << "Check for cylces" << endl;
+	cout << "Found cycles" << endl;
 	cout << "----------------------------------------------------" << endl;
-	auto colCycles = cycleCheck(rVector, e0, q);
-	auto colGroups = generateRepresentGroups(colCycles, rVector.size());
 	for (auto& group : colGroups)
 	{
 		cout << "S([r" << group.at(0) << "]) = {";
@@ -121,7 +128,7 @@ int main() {
 
 	cout << "Calculate vector c" << endl;
 	cout << "----------------------------------------------------" << endl;
-	c = generateC(A);
+	c = generateC(colGroups);
 	c.t().raw_print();
 	cout << "----------------------------------------------------" << endl << endl;
 
@@ -242,7 +249,7 @@ s32_mat generateG(vector<double> xVec, vector<vector<arma::uword>> colGroups, co
 		colSize += xVec.at(i) * colGroups.at(i).size();
 	}
 
-	const auto rowSize = colGroups.at(0).size();
+	const auto rowSize = rVector.at(0).size();
 	s32_mat G(rowSize, colSize, arma::fill::zeros);
 
     int colIndex = 0;
@@ -264,14 +271,17 @@ s32_mat generateG(vector<double> xVec, vector<vector<arma::uword>> colGroups, co
     return G;
 }
 
-s32_mat generateE0()
+s32_mat generateE0(int k)
 {
-	s32_mat e0;
-	e0 << 1 << 0 << 1 << arma::endr
-		<< 0 << 1 << 0 << arma::endr
-		<< 0 << 0 << 1 << arma::endr;
+	arma::arma_rng::set_seed_random();
+	return arma::randn<s32_mat>(k, k);
 
-	return e0;
+	/*s32_mat e0;
+	e0 << 1 << 0 << 0 << arma::endr
+		<< -2 << 0 << 1 << arma::endr
+		<< 1 << -1 << 0 << arma::endr;
+
+	return e0;*/
 }
 
 void normalizeVector(s32_vec& rVector, int q)
@@ -362,11 +372,15 @@ vector<vector<arma::uword>> cycleCheck(vector<s32_vec>& rVector, s32_mat& E, int
 		}
 	}
 
-	for (auto it = cycles.begin(); it != cycles.end(); ++it)
+	for (auto it = cycles.begin(); it != cycles.end(); )
 	{
-		if ((*it).front() != (*it).back())
+		if ((*it).size() > 2 && (*it).front() != (*it).back())
 		{
 			cycles.erase(it);
+		}
+		else
+		{
+			++it;
 		}
 	}
 
@@ -424,21 +438,13 @@ vector<double> gurobiPart(const s32_mat &A, const s32_vec& c, int b)
     return vector<double>();
 }
 
-s32_vec generateC(s32_mat& A)
+s32_vec generateC(vector<vector<arma::uword>>& colGroups)
 {
-	s32_vec c(A.n_cols);
+	s32_vec c(colGroups.size());
 
-	for (arma::uword i = 0; i < A.n_cols; i++)
+	for (arma::uword i = 0; i < colGroups.size(); ++i)
 	{
-		auto max = A(0, i);
-		for (arma::uword j = 1; j < A.n_rows; j++)
-		{
-			if (A(j, i) > max)
-			{
-				max = A(j, i);
-			}
-		}
-		c.at(i) = max;
+		c.at(i) = colGroups.at(i).size();
 	}
 
 	return c;
