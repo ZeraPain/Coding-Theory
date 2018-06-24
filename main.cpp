@@ -1,9 +1,11 @@
 #include <iostream>
 #include <armadillo>
 #include <chrono>
+#include <unordered_map>
 #include <gurobi_c++.h>
 
 using std::vector;
+using std::unordered_map;
 using std::string;
 using std::cout;
 using std::endl;
@@ -17,11 +19,12 @@ using arma::uword;
 constexpr bool SHOW_GUROBI_OUTPUT = true;
 constexpr bool SHOW_MATRIX_OUTPUT = true;
 constexpr uint32_t TIMEOUT_MATRIX_REDUCE = 10;
+constexpr uint32_t GROUP_MINIMUM_LIMIT = 20;
 
 /* Parameters */
-constexpr int q = 3;
-constexpr int k = 5;
-constexpr int b = 6;
+constexpr int q = 11;
+constexpr int k = 3;
+constexpr int b = 10;
 
 s32_vec encode(const s32_vec& word, const s32_mat &G, int q);
 
@@ -29,17 +32,18 @@ int recursionHelper(vector<s32_vec> &rVector, int vPosition, int hPosition, int 
 int getMinHammingDistance(int q, int k, const s32_mat &G);
 int getHammingDistance(const s32_vec& c1, const s32_vec& c2);
 
+s32_vec generateVectorX(const s32_mat &A, const s32_vec& c, int b);
+s32_vec generateVectorC(const vector<vector<uword>>& colGroups);
+
 s32_mat generateMatrixA(const vector<s32_vec>& canonicalRepresents, int q);
-s32_vec generateX(const s32_mat &A, const s32_vec& c, int b);
-s32_vec generateC(const vector<vector<uword>>& colGroups);
-s32_mat generateG(const s32_vec& xVec, const vector<vector<uword>>& colGroups, const vector<s32_vec> &rVector);
-s32_mat generateE0(int k);
+s32_mat generateMatrixG(const s32_vec& xVec, const vector<vector<uword>>& colGroups, const vector<s32_vec> &rVector);
+s32_mat generateMatrixE0(int k);
 
 vector<s32_vec> generateCanonicalRepresent(int q, int k);
 vector<s32_vec> generateLanguage(int q, int k);
 
-void regenerateMatrixA(s32_mat& A, const vector<vector<uword>>& colCycles, const vector<vector<uword>>& rowCycles);
-vector<vector<uword>> generateRepresentGroups(const vector<vector<uword>>& colCycles, int vecCount);
+void regenerateMatrixA(s32_mat& A, const unordered_map<uword, vector<uword>>& colCycles, const unordered_map<uword, vector<uword>>& rowCycles);
+vector<vector<uword>> generateRepresentGroups(const unordered_map<uword, vector<uword>>& cycle, int vecCount);
 
 void normalizeVector(s32_vec& v, int q);
 bool isEqualVector(const s32_vec& v1, const s32_vec& v2);
@@ -47,7 +51,7 @@ bool isLinDependent(const s32_vec& v1, const s32_vec& v2, int q);
 bool isNullVector(const s32_vec& rVector);
 
 int getVectorIndex(const vector<s32_vec>& rVector, const s32_vec& rVec, int q);
-vector<vector<uword>> cycleCheck(const vector<s32_vec>& rVector, const s32_mat& E, int q);
+unordered_map<uword, vector<uword>> cycleCheck(const vector<s32_vec>& rVector, const s32_mat& E, int q);
 
 
 
@@ -83,32 +87,23 @@ int main()
 	cout << "Testing for e0..." << endl;
 	cout << "----------------------------------------------------" << endl;
 
-	vector<vector<uword>> colCycles;
+	unordered_map<uword, vector<uword>> colCycles;
 	vector<vector<uword>> colGroups;
-	vector<vector<uword>> rowCycles;
-	vector<vector<uword>> rowGroups;
 
 	s32_mat e0;
-	auto totalGroupCount = std::numeric_limits<uint32_t>::max();
-	auto colGroupsCount = std::numeric_limits<uint32_t>::max();
-	auto rowGroupsCount = std::numeric_limits<uint32_t>::max();
+	auto colGroupCount = std::numeric_limits<uint32_t>::max();
 	uint32_t timeout = 0;
 
 	auto start = std::chrono::high_resolution_clock::now();
 	do
 	{
-		auto test_e0 = generateE0(k);
+		const auto test_e0 = generateMatrixE0(k);
 		colCycles = cycleCheck(rVector, test_e0, q);
 		colGroups = generateRepresentGroups(colCycles, rVector.size());
-		const s32_mat test_e0_t = test_e0.t();
-		rowCycles = cycleCheck(rVector, test_e0_t, q);
-		rowGroups = generateRepresentGroups(rowCycles, rVector.size());
-
-		if (colGroups.size() + rowGroups.size() < totalGroupCount)
+		
+		if (colGroups.size() < colGroupCount && colGroups.size() >= GROUP_MINIMUM_LIMIT)
 		{
-			colGroupsCount = colGroups.size();
-			rowGroupsCount = rowGroups.size();
-			totalGroupCount = colGroupsCount + rowGroupsCount;
+			colGroupCount = colGroups.size();
 			e0 = test_e0;
 			timeout = 0;
 		}
@@ -117,7 +112,7 @@ int main()
 		const auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 		if (duration > 1000)
 		{
-			cout << "Current producer e0 creates " << colGroupsCount << " columns and " << rowGroupsCount << " rows." << endl;
+			cout << "Current producer e0 reduces A from [" << A.n_cols << "] to [" << colGroupCount << "] columns." << endl;
 			start = end;
 			++timeout;
 		}
@@ -127,8 +122,8 @@ int main()
 	colGroups = generateRepresentGroups(colCycles, rVector.size());
 
 	const s32_mat e0_t = e0.t();
-	rowCycles = cycleCheck(rVector, e0_t, q);
-	rowGroups = generateRepresentGroups(rowCycles, rVector.size());
+	const auto rowCycles = cycleCheck(rVector, e0_t, q);
+	auto rowGroups = generateRepresentGroups(rowCycles, rVector.size());
 
 	cout << "Found Producer e0 - reducing to [" << colGroups.size() << "] groups" << endl;
 	e0.raw_print();
@@ -173,11 +168,11 @@ int main()
 
 	cout << "Calculate vector c" << endl;
 	cout << "----------------------------------------------------" << endl;
-	c = generateC(colGroups);
+	c = generateVectorC(colGroups);
 	c.t().raw_print();
 	cout << "----------------------------------------------------" << endl << endl;
 
-	auto x = generateX(A, c, b);
+	auto x = generateVectorX(A, c, b);
     cout << "Calculating vector x" << endl;
     cout << "----------------------------------------------------" << endl;
 	x.t().raw_print();
@@ -185,20 +180,15 @@ int main()
 
     cout << "We have now following code" << endl;
     cout << "----------------------------------------------------" << endl;
-	uint32_t n = 0;
-	for (uint32_t i = 0; i < x.size(); ++i)
-	{
-		n += x.at(i) * c.at(i);
-	}
-
-	const int d = n - b;
+	const auto n = dot(x, c);
+	const auto d = n - b;
     cout << "[n,k,d]_q" << endl;
     cout << "[" << n << "," << k << "," << d << "]_" << q << "" << endl;
     cout << "----------------------------------------------------" << endl << endl;
 
     cout << "Generate Generatormatrix G" << endl;
     cout << "----------------------------------------------------" << endl;
-	auto G = generateG(x, colGroups, rVector);
+	auto G = generateMatrixG(x, colGroups, rVector);
     G.raw_print();
     cout << "----------------------------------------------------" << endl << endl;
 
@@ -274,7 +264,7 @@ vector<s32_vec> generateLanguage(const int q, const int k)
     {
 	    s32_vec newtmp(k);
         if (current.at(0) == 1) {
-            for (int j = 1; j < k + 1; j++) {
+            for (auto j = 1; j < k + 1; j++) {
                 newtmp[j - 1] = current[j];
             }
             language.push_back(newtmp);
@@ -284,7 +274,7 @@ vector<s32_vec> generateLanguage(const int q, const int k)
     return language;
 }
 
-s32_mat generateG(const s32_vec& xVec, const vector<vector<uword>>& colGroups, const vector<s32_vec> &rVector)
+s32_mat generateMatrixG(const s32_vec& xVec, const vector<vector<uword>>& colGroups, const vector<s32_vec> &rVector)
 {
 	uint32_t colSize = 0;
 	for (uint32_t i = 0; i < xVec.size(); ++i)
@@ -314,8 +304,36 @@ s32_mat generateG(const s32_vec& xVec, const vector<vector<uword>>& colGroups, c
     return G;
 }
 
-s32_mat generateE0(const int k)
+s32_mat generateMatrixE0(const int k)
 {
+	/*s32_mat e0;
+	e0	<< 1 << 1 << 1 << arma::endr
+		<< 1 << 0 << 0 << arma::endr
+		<< 1 << 0 << 1 << arma::endr;
+	return e0;*/
+
+	/*	1 0 1 0 0
+		0 0 1 1 0
+		0 1 0 0 0
+		0 0 0 0 1
+		1 0 0 0 0*/
+
+	/*s32_mat e0;
+	e0	<< 1 << 0 << 1 << 0 << 0 << arma::endr
+		<< 0 << 0 << 1 << 1 << 0 << arma::endr
+		<< 0 << 1 << 0 << 0 << 0 << arma::endr
+		<< 0 << 0 << 0 << 0 << 1 << arma::endr
+		<< 1 << 0 << 0 << 0 << 0 << arma::endr;
+	return e0;*/
+
+	/*s32_mat e0;
+	e0 << 0 << 1 << 0 << 0 << 0 << arma::endr
+		<< 0 << 0 << 1 << 0 << 0 << arma::endr
+		<< 1 << 0 << 1 << 0 << 0 << arma::endr
+		<< 0 << 1 << 0 << 0 << 1 << arma::endr
+		<< 0 << 0 << 1 << 1 << 1 << arma::endr;
+	return e0;*/
+
 	arma::arma_rng::set_seed_random();
 	s32_mat e = arma::randn<s32_mat>(k, k);
 
@@ -409,10 +427,9 @@ int getVectorIndex(const vector<s32_vec>& rVector, const s32_vec& rVec, const in
 	return ret;
 }
 
-vector<vector<uword>> cycleCheck(const vector<s32_vec>& rVector, const s32_mat& E, const int q)
+unordered_map<uword, vector<uword>> cycleCheck(const vector<s32_vec>& rVector, const s32_mat& E, const int q)
 {
-	vector<vector<uword>> cycles;
-
+	unordered_map<uword, uword> convert;
 	for (uword i = 0; i < rVector.size(); i++)
 	{
 		s32_vec tmpVec = E * rVector.at(i);
@@ -423,67 +440,55 @@ vector<vector<uword>> cycleCheck(const vector<s32_vec>& rVector, const s32_mat& 
 			if (-1 != vectorIndex)
 			{
 				//cout << "Found conversion: r" << i << " -> r" << vectorIndex << endl;
-				auto isInQueue = false;
-				for (auto& c : cycles)
-				{
-					if (c.back() == i)
-					{
-						c.push_back(vectorIndex);
-						isInQueue = true;
-					}
-					else if (c.front() == static_cast<uword>(vectorIndex))
-					{
-						vector<uword> r;
-						r.push_back(i);
-						r.insert(r.end(), c.begin(), c.end());
-						c = r;
-						isInQueue = true;
-					}
-				}
-
-				if (!isInQueue)
-				{
-					vector<uword> tmpQueue;
-					tmpQueue.push_back(i);
-					tmpQueue.push_back(vectorIndex);
-					cycles.push_back(tmpQueue);
-				}
+				convert.insert({ i, vectorIndex });
 			}
 		}
 	}
 
-	for (auto& c : cycles)
+	unordered_map<uword, vector<uword>> cycles;
+	for (uword i = 0; i < rVector.size(); i++)
 	{
-		if (c.front() != c.back())
+		const auto key = convert.find(i);
+		if (key != convert.end())
 		{
-			s32_vec tmpVec = E * rVector.at(c.back());
-			normalizeVector(tmpVec, q);
-			const uword vectorIndex = getVectorIndex(rVector, tmpVec, q);
-			if (c.front() == vectorIndex)
+			vector<uword> tmp;
+			tmp.push_back(key->first);
+			tmp.push_back(key->second);
+			
+			bool search;
+			do
 			{
-				c.push_back(vectorIndex);
-			}
-		}
-	}
+				search = false;
+				const auto next = convert.find(tmp.back());
+				if (next != convert.end())
+				{
+					const auto loop = find(tmp.begin() + 1, tmp.end(), next->second);
+					if (loop != tmp.end())
+					{
+						tmp.erase(tmp.begin(), loop);
+					}
 
-	for (auto it = cycles.begin(); it != cycles.end(); )
-	{
-		if ((*it).front() != (*it).back())
-		{
-			cycles.erase(it);
-		}
-		else
-		{
-			(*it).pop_back();
-			std::sort((*it).begin(), (*it).end());
-			++it;
+					tmp.push_back(next->second);
+					search = true;
+				}
+			} while (search && tmp.front() != tmp.back());
+
+			if (tmp.front() == tmp.back())
+			{
+				tmp.pop_back();
+				sort(tmp.begin(), tmp.end());
+				if (cycles.find(tmp.front()) == cycles.end())
+				{
+					cycles.insert({ tmp.front(), tmp });
+				}
+			}
 		}
 	}
 
 	return cycles;
 }
 
-s32_vec generateX(const s32_mat &A, const s32_vec& c, const int b)
+s32_vec generateVectorX(const s32_mat &A, const s32_vec& c, const int b)
 {
     try {
 	    const auto env = GRBEnv();
@@ -536,7 +541,7 @@ s32_vec generateX(const s32_mat &A, const s32_vec& c, const int b)
     return s32_vec(A.n_cols);
 }
 
-s32_vec generateC(const vector<vector<uword>>& colGroups)
+s32_vec generateVectorC(const vector<vector<uword>>& colGroups)
 {
 	s32_vec c(colGroups.size());
 
@@ -565,29 +570,29 @@ s32_mat generateMatrixA(const vector<s32_vec> &canonicalRepresents, const int q)
     return A;
 }
 
-void regenerateMatrixA(s32_mat& A, const vector<vector<uword>>& colCycles, const vector<vector<uword>>& rowCycles)
+void regenerateMatrixA(s32_mat& A, const unordered_map<uword, vector<uword>>& colCycles, const unordered_map<uword, vector<uword>>& rowCycles)
 {
 	vector<uword> colsDelete;
 	vector<uword> rowsDelete;
 
 	for (auto& c : colCycles)
 	{
-		for (uword i = 1; i < c.size(); ++i)
+		for (uword i = 1; i < c.second.size(); ++i)
 		{
 			for (uword j = 0; j < A.n_rows; j++)
 			{
-				A(j, c.at(0)) += A(j, c.at(i));
+				A(j, c.second.at(0)) += A(j, c.second.at(i));
 			}
 
-			colsDelete.push_back(c.at(i));
+			colsDelete.push_back(c.second.at(i));
 		}
 	}
 
 	for (auto& r : rowCycles)
 	{
-		for (uword i = 1; i < r.size(); ++i)
+		for (uword i = 1; i < r.second.size(); ++i)
 		{
-			rowsDelete.push_back(r.at(i));
+			rowsDelete.push_back(r.second.at(i));
 		}
 	}
 
@@ -634,13 +639,13 @@ bool sortHelper(const vector<uword>& i, const vector<uword>& j)
 	return i.at(0) < j.at(0);
 }
 
-vector<vector<uword>> generateRepresentGroups(const vector<vector<uword>>& colCycles, const int vecCount)
+vector<vector<uword>> generateRepresentGroups(const unordered_map<uword, vector<uword>>& cycle, const int vecCount)
 {
 	vector<vector<uword>> repGroups;
-	repGroups.reserve(colCycles.size());
-	for (auto& colCycle : colCycles)
+	repGroups.reserve(cycle.size());
+	for (auto& c : cycle)
 	{
-		repGroups.push_back(colCycle);
+		repGroups.push_back(c.second);
 	}
 
 	for (auto i = 0; i < vecCount; ++i)
