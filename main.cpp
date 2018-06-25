@@ -1,6 +1,7 @@
 #include <iostream>
 #include <armadillo>
 #include <chrono>
+#include <random>
 #include <unordered_map>
 #include <gurobi_c++.h>
 
@@ -12,17 +13,17 @@ using std::endl;
 
 using arma::s32_vec;
 using arma::s32_mat;
+using arma::mat;
 using arma::uword;
 
 
 /* Configuration */
 constexpr bool SHOW_GUROBI_OUTPUT = true;
-constexpr bool SHOW_MATRIX_OUTPUT = true;
+constexpr bool SHOW_MATRIX_OUTPUT = false;
 constexpr uint32_t TIMEOUT_MATRIX_REDUCE = 10;
-constexpr uint32_t GROUP_MINIMUM_LIMIT = 20;
 
 /* Parameters */
-constexpr int q = 11;
+constexpr int q = 18;
 constexpr int k = 3;
 constexpr int b = 10;
 
@@ -37,7 +38,7 @@ s32_vec generateVectorC(const vector<vector<uword>>& colGroups);
 
 s32_mat generateMatrixA(const vector<s32_vec>& canonicalRepresents, int q);
 s32_mat generateMatrixG(const s32_vec& xVec, const vector<vector<uword>>& colGroups, const vector<s32_vec> &rVector);
-s32_mat generateMatrixE0(int k);
+s32_mat generateMatrixE0(int k, int q);
 
 vector<s32_vec> generateCanonicalRepresent(int q, int k);
 vector<s32_vec> generateLanguage(int q, int k);
@@ -90,18 +91,26 @@ int main()
 	unordered_map<uword, vector<uword>> colCycles;
 	vector<vector<uword>> colGroups;
 
-	s32_mat e0;
+	s32_mat e0(k, k);
 	auto colGroupCount = std::numeric_limits<uint32_t>::max();
 	uint32_t timeout = 0;
 
 	auto start = std::chrono::high_resolution_clock::now();
 	do
 	{
-		const auto test_e0 = generateMatrixE0(k);
+		const auto test_e0 = generateMatrixE0(k, q);
 		colCycles = cycleCheck(rVector, test_e0, q);
 		colGroups = generateRepresentGroups(colCycles, rVector.size());
-		
-		if (colGroups.size() < colGroupCount && colGroups.size() >= GROUP_MINIMUM_LIMIT)
+
+		uint32_t maxElements = 0;
+		for (auto& colGroup : colGroups)
+		{
+			if (colGroup.size() > maxElements)
+			{
+				maxElements = colGroup.size();
+			}
+		}
+		if (maxElements < q && colGroups.size() < colGroupCount)
 		{
 			colGroupCount = colGroups.size();
 			e0 = test_e0;
@@ -116,7 +125,7 @@ int main()
 			start = end;
 			++timeout;
 		}
-	} while (timeout < TIMEOUT_MATRIX_REDUCE);
+	} while (colGroupCount == std::numeric_limits<uint32_t>::max() || timeout < TIMEOUT_MATRIX_REDUCE);
 
 	colCycles = cycleCheck(rVector, e0, q);
 	colGroups = generateRepresentGroups(colCycles, rVector.size());
@@ -208,6 +217,7 @@ int main()
 int getMinHammingDistance(const int q, const int k, const s32_mat &G)
 {
 	auto language = generateLanguage(q, k);
+	language.erase(language.begin());
 
     vector<s32_vec> codes;
 	codes.reserve(language.size());
@@ -304,7 +314,7 @@ s32_mat generateMatrixG(const s32_vec& xVec, const vector<vector<uword>>& colGro
     return G;
 }
 
-s32_mat generateMatrixE0(const int k)
+s32_mat generateMatrixE0(const int k, const int q)
 {
 	/*s32_mat e0;
 	e0	<< 1 << 1 << 1 << arma::endr
@@ -334,18 +344,32 @@ s32_mat generateMatrixE0(const int k)
 		<< 0 << 0 << 1 << 1 << 1 << arma::endr;
 	return e0;*/
 
-	arma::arma_rng::set_seed_random();
-	s32_mat e = arma::randn<s32_mat>(k, k);
+	std::default_random_engine generator;
+	const std::uniform_int_distribution<int> distribution(0, q - 1);
 
+	mat e(k, k);
+	do
+	{
+		for (auto i = 0; i < k; ++i)
+		{
+			for (auto j = 0; j < k; ++j)
+			{
+				generator.seed(std::random_device()());
+				e(i, j) = distribution(generator);
+			}
+		}
+	} while (0 == det(e));
+
+	s32_mat e0(k, k);
 	for (auto i = 0; i < k; ++i)
 	{
 		for (auto j = 0; j < k; ++j)
 		{
-			e(i, j) = e(i, j) != 0 ? 1 : 0;
+			e0(i, j) = e(i, j);
 		}
 	}
 
-	return e;
+	return e0;
 }
 
 void normalizeVector(s32_vec& v, const int q)
