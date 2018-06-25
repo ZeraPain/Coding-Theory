@@ -2,6 +2,7 @@
 #include <armadillo>
 #include <chrono>
 #include <random>
+#include <numeric>
 #include <unordered_map>
 #include <gurobi_c++.h>
 
@@ -23,7 +24,7 @@ constexpr bool SHOW_MATRIX_OUTPUT = false;
 constexpr uint32_t TIMEOUT_MATRIX_REDUCE = 10;
 
 /* Parameters */
-constexpr int q = 18;
+constexpr int q = 11;
 constexpr int k = 3;
 constexpr int b = 10;
 
@@ -31,7 +32,6 @@ s32_vec encode(const s32_vec& word, const s32_mat &G, int q);
 
 int recursionHelper(vector<s32_vec> &rVector, int vPosition, int hPosition, int q, int k);
 int getMinHammingDistance(int q, int k, const s32_mat &G);
-int getHammingDistance(const s32_vec& c1, const s32_vec& c2);
 
 s32_vec generateVectorX(const s32_mat &A, const s32_vec& c, int b);
 s32_vec generateVectorC(const vector<vector<uword>>& colGroups);
@@ -53,7 +53,6 @@ bool isNullVector(const s32_vec& rVector);
 
 int getVectorIndex(const vector<s32_vec>& rVector, const s32_vec& rVec, int q);
 unordered_map<uword, vector<uword>> cycleCheck(const vector<s32_vec>& rVector, const s32_mat& E, int q);
-
 
 
 int main() 
@@ -92,13 +91,14 @@ int main()
 	vector<vector<uword>> colGroups;
 
 	s32_mat e0(k, k);
+	s32_mat test_e0(k, k);
+	test_e0.fill(0);
 	auto colGroupCount = std::numeric_limits<uint32_t>::max();
 	uint32_t timeout = 0;
 
-	auto start = std::chrono::high_resolution_clock::now();
+	std::chrono::high_resolution_clock::time_point start;
 	do
 	{
-		const auto test_e0 = generateMatrixE0(k, q);
 		colCycles = cycleCheck(rVector, test_e0, q);
 		colGroups = generateRepresentGroups(colCycles, rVector.size());
 
@@ -125,7 +125,9 @@ int main()
 			start = end;
 			++timeout;
 		}
-	} while (colGroupCount == std::numeric_limits<uint32_t>::max() || timeout < TIMEOUT_MATRIX_REDUCE);
+
+		test_e0 = generateMatrixE0(k, q);
+	} while (colGroupCount == A.n_cols || timeout < TIMEOUT_MATRIX_REDUCE);
 
 	colCycles = cycleCheck(rVector, e0, q);
 	colGroups = generateRepresentGroups(colCycles, rVector.size());
@@ -214,6 +216,13 @@ int main()
     return 0;
 }
 
+template<class T, class I1, class I2>
+T hamming_distance(uint32_t size, I1 b1, I2 b2) 
+{
+	return std::inner_product(b1, b1 + size, b2, T{},
+		std::plus<T>(), std::not_equal_to<T>());
+}
+
 int getMinHammingDistance(const int q, const int k, const s32_mat &G)
 {
 	auto language = generateLanguage(q, k);
@@ -231,7 +240,7 @@ int getMinHammingDistance(const int q, const int k, const s32_mat &G)
 	{
 		for (auto& codeword2 : codes)
 		{
-			const auto distance = getHammingDistance(codeword, codeword2);
+			const auto distance = hamming_distance<int>(codeword.size(), codeword.begin(), codeword2.begin());
 			if (distance > 0 && distance < minDistance) 
 			{
 				minDistance = distance;
@@ -248,21 +257,6 @@ s32_vec encode(const s32_vec& word, const s32_mat &G, const int q)
 	normalizeVector(encoded, q);
 
 	return encoded;
-}
-
-int getHammingDistance(const s32_vec& c1, const s32_vec& c2) 
-{
-    if (c1.size() != c2.size())
-        return -1;
-
-    int ret = 0;
-
-    for (uword i = 0; i < c1.size(); i++) 
-	{
-		ret += abs(c1.at(i) - c2.at(i));
-    }
-
-    return ret;
 }
 
 vector<s32_vec> generateLanguage(const int q, const int k)
@@ -316,34 +310,6 @@ s32_mat generateMatrixG(const s32_vec& xVec, const vector<vector<uword>>& colGro
 
 s32_mat generateMatrixE0(const int k, const int q)
 {
-	/*s32_mat e0;
-	e0	<< 1 << 1 << 1 << arma::endr
-		<< 1 << 0 << 0 << arma::endr
-		<< 1 << 0 << 1 << arma::endr;
-	return e0;*/
-
-	/*	1 0 1 0 0
-		0 0 1 1 0
-		0 1 0 0 0
-		0 0 0 0 1
-		1 0 0 0 0*/
-
-	/*s32_mat e0;
-	e0	<< 1 << 0 << 1 << 0 << 0 << arma::endr
-		<< 0 << 0 << 1 << 1 << 0 << arma::endr
-		<< 0 << 1 << 0 << 0 << 0 << arma::endr
-		<< 0 << 0 << 0 << 0 << 1 << arma::endr
-		<< 1 << 0 << 0 << 0 << 0 << arma::endr;
-	return e0;*/
-
-	/*s32_mat e0;
-	e0 << 0 << 1 << 0 << 0 << 0 << arma::endr
-		<< 0 << 0 << 1 << 0 << 0 << arma::endr
-		<< 1 << 0 << 1 << 0 << 0 << arma::endr
-		<< 0 << 1 << 0 << 0 << 1 << arma::endr
-		<< 0 << 0 << 1 << 1 << 1 << arma::endr;
-	return e0;*/
-
 	std::default_random_engine generator;
 	const std::uniform_int_distribution<int> distribution(0, q - 1);
 
