@@ -1,8 +1,8 @@
 \section{Schritt 1}
-Ziel von Schritt 1 war es, anhand der Werte für k und q, eine Generatormatrix zur konstruieren. \\
+Ziel von Schritt 1 war es, anhand der Werte für k und q, eine Matrix zur konstruieren. \\
 Die Anwendung nimmt zunächst die Werte  entgegen und berechnet eine Sammlung von linear unabhängigen Vektoren.\\
 Sind alle linear voneinander unabhängigen Vektoren gefunden, wird anhand der Werte von k und q die Größe der Matrix berechnet. Die Berechnung basiert auf der, in der Vorlesung vorgestellten, Formel: $\dfrac{q^{k}-1}{q-1}$. \\
-Anhand der berechneten Größe der Matrix, wird zum Abschluss eine Generatormatrix aus den zuvor erstellten Vektoren generiert und ausgegeben.
+Anhand der berechneten Größe der Matrix, wird zum Abschluss eine Matrix aus den zuvor erstellten Vektoren generiert und ausgegeben.
 \subsection{Generierung von linear unabhängigen Vektoren}
 \begin{lstlisting}[caption=Generierung der Vektoren]
 for (auto k_index = k - 1; k_index >= 0; --k_index)
@@ -75,4 +75,4 @@ Getestet wurde dieser Teil der Anwendung u.a. für die folgenden Wertepaare:
 	\end{pmatrix}
 	$
 \end{description}
-Neben den oben aufgeführten Werten wurden noch deutlich größere Eingaben, z.B. .. getestet. Die Matritzen werden hierzu korrekt berechnen, lassen sich allerdings nicht mehr korrekt innerhalb eines PDF's darstellen.
+Neben den oben aufgeführten Werten wurden noch deutlich größere Eingaben, z.B. .. getestet. Die Matrizen werden hierzu korrekt berechnen, lassen sich allerdings nicht mehr korrekt innerhalb eines PDF's darstellen.
