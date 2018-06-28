@@ -1,9 +1,10 @@
 \section{Schritt 1}
-Ziel von Schritt 1 war es, anhand der Werte für k und q, eine Matrix zur konstruieren. \\
-Die Anwendung nimmt zunächst die Werte  entgegen und berechnet eine Sammlung von linear unabhängigen Vektoren.\\
-Sind alle linear voneinander unabhängigen Vektoren gefunden, wird anhand der Werte von k und q die Größe der Matrix berechnet. Die Berechnung basiert auf der, in der Vorlesung vorgestellten, Formel: $\dfrac{q^{k}-1}{q-1}$. \\
+Ziel von Schritt 1 war es, anhand der Werte für k und q, eine Matrix der Form (....) zu konstruieren. \\
+Die Anwendung nimmt zunächst die Werte  entgegen und berechnet eine Sammlung von linear unabhängigen Vektoren. Die Berechnung erfolgt hierbei indem die Vektoren der Reihe nach konstruiert werden und rekursiv auf ihre lineare Unabhängigkeit geprüft werden.\\
+Sind ausreichend, linear voneinander unabhängigen, Vektoren gefunden, wird anhand der Werte von k und q die Größe der Matrix berechnet. Die Berechnung basiert auf der, in der Vorlesung vorgestellten, Formel: $\dfrac{q^{k}-1}{q-1}$. \\
 Anhand der berechneten Größe der Matrix, wird zum Abschluss eine Matrix aus den zuvor erstellten Vektoren generiert und ausgegeben.
 \subsection{Generierung von linear unabhängigen Vektoren}
+
 \begin{lstlisting}[caption=Generierung der Vektoren]
 for (auto k_index = k - 1; k_index >= 0; --k_index)
 {
