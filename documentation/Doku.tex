@@ -1,0 +1,53 @@
+\documentclass[12pt, titlepage]{article}
+
+\usepackage[ngerman]{babel}
+\usepackage{color}
+\usepackage[a4paper,lmargin={4cm},rmargin={2cm},
+tmargin={2.5cm},bmargin = {2.5cm}]{geometry}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage[utf8]{inputenc}
+\usepackage{hyperref}
+\usepackage{listings}
+
+\definecolor{mygreen}{rgb}{0,0.6,0}
+\definecolor{mygray}{rgb}{0.50,0,0.5}
+\definecolor{mymauve}{rgb}{0.58,0,0.82}
+
+\lstset{
+	breaklines=true,
+	frame=single,
+	numbers=left,
+	stepnumber=5,
+	language=C++,
+	keywordstyle=\color{blue},
+	commentstyle=\color{mygreen},
+	backgroundcolor=\color{white},
+	numberstyle=\color{mygray},
+	stringstyle=\color{mymauve},
+	tabsize=2
+}
+
+\begin{document}
+	\begin{titlepage}
+		\title{Prüfungsvorleistung Codierungs-Theorie}
+		\author{David Tarnow, Michael Narkus, Armel Siewe, Lukas Köhler}
+		\maketitle
+	\end{titlepage}
+	
+	\tableofcontents
+
+	\newpage
+	
+	\input{chapters/introduction}
+	\input{chapters/step1}
+	\input{chapters/step2}
+	\input{chapters/step3}
+	\input{chapters/step4}
+	\input{chapters/step5}
+	
+	\lstlistoflistings
+	
+\end{document}

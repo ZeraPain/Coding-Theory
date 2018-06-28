@@ -60,11 +60,11 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>library\armadillo-8.500.1\include;C:\gurobi800\win64\include;$(IncludePath)</IncludePath>
+    <IncludePath>library\armadillo-8.600.0\include;C:\gurobi800\win64\include;$(IncludePath)</IncludePath>
     <LibraryPath>library\LAPACK_Release_x64;C:\gurobi800\win64\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>library\armadillo-8.500.1\include;C:\gurobi800\win64\include;$(IncludePath)</IncludePath>
+    <IncludePath>library\armadillo-8.600.0\include;C:\gurobi800\win64\include;$(IncludePath)</IncludePath>
     <LibraryPath>library\LAPACK_Release_x64;C:\gurobi800\win64\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">

@@ -20,13 +20,13 @@ using arma::uword;
 
 /* Configuration */
 constexpr bool SHOW_GUROBI_OUTPUT = true;
-constexpr bool SHOW_MATRIX_OUTPUT = false;
-constexpr uint32_t TIMEOUT_MATRIX_REDUCE = 10;
+constexpr bool SHOW_MATRIX_OUTPUT = true;
+constexpr uint32_t TIMEOUT_MATRIX_REDUCE = 1;
 
 /* Parameters */
-constexpr int q = 11;
+constexpr int q = 3;
 constexpr int k = 3;
-constexpr int b = 10;
+constexpr int b = 3;
 
 s32_vec encode(const s32_vec& word, const s32_mat &G, int q);
 
