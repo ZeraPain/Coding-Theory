@@ -1,51 +1,14 @@
 \section{Schritt 1}
-Ziel von Schritt 1 war es, anhand der Werte für k und q, eine Matrix der Form (....) zu konstruieren. \\
+Ziel von Schritt 1 war es, anhand der Werte für k und q, eine Matrix der Form $A_{k,q}$ zu konstruieren. \\
 Die Anwendung nimmt zunächst die Werte  entgegen und berechnet eine Sammlung von linear unabhängigen Vektoren. Die Berechnung erfolgt hierbei indem die Vektoren der Reihe nach konstruiert werden und rekursiv auf ihre lineare Unabhängigkeit geprüft werden.\\
 Sind ausreichend, linear voneinander unabhängigen, Vektoren gefunden, wird anhand der Werte von k und q die Größe der Matrix berechnet. Die Berechnung basiert auf der, in der Vorlesung vorgestellten, Formel: $\dfrac{q^{k}-1}{q-1}$. \\
-Anhand der berechneten Größe der Matrix, wird zum Abschluss eine Matrix aus den zuvor erstellten Vektoren generiert und ausgegeben.
-\subsection{Generierung von linear unabhängigen Vektoren}
-
-\begin{lstlisting}[caption=Generierung der Vektoren]
-for (auto k_index = k - 1; k_index >= 0; --k_index)
-{
-	vec init_vec(k); // set size to k
-	init_vec.fill(0); // init with zero
-	init_vec.at(k_index) = 1;
-	ret.push_back(init_vec);
-	calc_lin_independ_vec(ret, &init_vec, 1, q, k_index, k);
-}	
-\end{lstlisting}
-\begin{lstlisting}[caption=Berechnung der linearen Unabhängigkeiten]
-k_index++;
-auto construct_vec = *init_vec;
-calc_lin_independ_vec(ret, &construct_vec, q_index, q, k_index, k);
-	
-while (construct_vec.at(k_index) < (q - 1))
-{
-	construct_vec.at(k_index) += 1;
-	calc_lin_independ_vec(ret, &construct_vec, q_index + 1, q, k_index, k);
-}
-\end{lstlisting}
-
-\subsection{Erstellen der Matrix}
-\begin{lstlisting}[caption=Erstellen der Generatormatrix]
-arma::mat A(mat_size, mat_size);
-for (auto i = 0; i < mat_size; ++i)
-{
-	for (auto j = 0; j < mat_size; ++j)
-	{
-		const auto res = static_cast<int>(dot(lin_independ_vecs.at(i), lin_independ_vecs.at(j))) % q;
-		A(i, j) = 0 == res ? 1 : 0;
-	}
-}
-\end{lstlisting}
-  
-\subsection{Tests}
+Anhand der berechneten Größe der Matrix, wird zum Abschluss eine Matrix aus den zuvor erstellten Vektoren generiert und ausgegeben.\\
+\\
 Getestet wurde dieser Teil der Anwendung u.a. für die folgenden Wertepaare:
 
 \begin{description}
 	\item
-	Ergebnis für q=2 und k =2:
+	q=2 und k =2:
 	$
 		\begin{pmatrix}
 			1 & 0 & 0 \\
