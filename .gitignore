@@ -10,3 +10,4 @@
 /.vs
 /library
 /x64/Release
+/lin-code-gen/x64/Debug

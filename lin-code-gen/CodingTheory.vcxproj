@@ -19,10 +19,14 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="LinearCodeGenerator.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Math.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\..\gurobi800\win64\include\gurobi_c++.h" />
+    <ClInclude Include="LinearCodeGenerator.h" />
+    <ClInclude Include="Math.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{BDE105B5-0B52-4D77-832F-3465D464A901}</ProjectGuid>
@@ -60,8 +64,8 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>library\armadillo-8.600.0\include;C:\gurobi800\win64\include;$(IncludePath)</IncludePath>
-    <LibraryPath>library\LAPACK_Release_x64;C:\gurobi800\win64\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(SolutionDir)library\armadillo-8.600.0\include;C:\gurobi811\win64\include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)library\LAPACK_Release_x64;C:\gurobi811\win64\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>library\armadillo-8.600.0\include;C:\gurobi800\win64\include;$(IncludePath)</IncludePath>
@@ -72,7 +76,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>armadillo-8.500-RC2\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)library\armadillo-8.500-RC2\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -104,8 +108,8 @@
       <Optimization>Disabled</Optimization>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>gurobi80.lib;gurobi_c++md2017.lib;blas_win64_MT.lib;lapack_win64_MT.lib;gurobi_c++mdd2017.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>C:\gurobi800\win64\lib;library\LAPACK_Release_x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>gurobi81.lib;gurobi_c++md2017.lib;blas_win64_MT.lib;lapack_win64_MT.lib;gurobi_c++mdd2017.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\gurobi81\win64\lib;$(SolutionDir)library\LAPACK_Release_x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
     </Link>
